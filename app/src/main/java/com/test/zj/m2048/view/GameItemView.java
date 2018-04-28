@@ -4,6 +4,8 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Point;
+import android.support.annotation.AttrRes;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
 import android.view.Gravity;
@@ -26,6 +28,20 @@ public class GameItemView extends FrameLayout {
 
     public GameItemView(Context context) {
         super(context);
+        init(context);
+    }
+
+    public GameItemView(@NonNull Context context, @Nullable AttributeSet attrs) {
+        super(context, attrs);
+        init(context);
+    }
+
+    public GameItemView(@NonNull Context context, @Nullable AttributeSet attrs, @AttrRes int defStyleAttr) {
+        super(context, attrs, defStyleAttr);
+        init(context);
+    }
+
+    void init(Context context){
         mTextView = new TextView(context);
         LayoutParams layoutParams = new LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         layoutParams.gravity = Gravity.CENTER;
@@ -42,7 +58,8 @@ public class GameItemView extends FrameLayout {
         int color = getColor(value);
         Paint paint = new Paint();
         paint.setColor(color);
-        canvas.drawRoundRect(0,0,getHeight(),getWidth(),radius,radius,paint);
+        int h = getWidth();
+        canvas.drawRoundRect(0,0,getWidth(),getHeight(),radius,radius,paint);
         super.onDraw(canvas);
     }
 
@@ -67,15 +84,9 @@ public class GameItemView extends FrameLayout {
         if(this.value == value)
             return;
 
-        this.value = value;
-        if(value==0){
-            mTextView.setText("");
-        }else
-        {
-            mTextView.setText(value+"");
-        }
+        setContent(value);
 
-       invalidate();
+        invalidate();
     }
 
     public int getTargetvalue() {
@@ -95,6 +106,16 @@ public class GameItemView extends FrameLayout {
     }
 
     //endregion
+
+    private void setContent(int value){
+        this.value = value;
+        if(value==0){
+            mTextView.setText("");
+        }else
+        {
+            mTextView.setText(value+"");
+        }
+    }
 
     public int getColor(int num){
 

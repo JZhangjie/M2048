@@ -3,13 +3,18 @@ package com.test.zj.m2048;
 import android.content.SharedPreferences;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.test.zj.m2048.data.GameStatus;
 import com.test.zj.m2048.utils.ArrayHelper;
 import com.test.zj.m2048.utils.Constants;
+import com.test.zj.m2048.utils.RingPlayer;
+import com.test.zj.m2048.view.GameItemView;
 import com.test.zj.m2048.view.GamePanelView;
 
 public class MainActivity extends AppCompatActivity {
@@ -17,12 +22,12 @@ public class MainActivity extends AppCompatActivity {
     private LinearLayout mGamePanel;
     private GamePanelView mGamePanelView;
     private TextView mGameScore;
-    private TextView mGameLevel;
+    private GameItemView mGameLevel;
 
-    private int[][] currentItems;
-    private int currentScore;
-    private int[][] levelItems;
-    private int currentLevel;
+    private GameStatus lastRecordStatus;
+    private GameStatus currentStatus;
+
+    private RingPlayer mPlayer;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -30,16 +35,23 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         init();
         initData();
-        mGamePanelView.restart(currentItems);
+        mGamePanelView.restart(currentStatus);
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_main,menu);
+        return true;
     }
 
     private void initData(){
 
         SharedPreferences sp = getPreferences(MODE_PRIVATE);
-        String s =sp.getString(Constants.GAMEITEMS,"");
-        currentScore = sp.getInt(Constants.GAMESCORE,0);
-        currentItems = ArrayHelper.StringToArray(s);
-        currentLevel =sp.getInt(Constants.GAMELEVEL,0);
+        String current =sp.getString(Constants.CURRENTSTATUS,"");
+        String last =sp.getString(Constants.LASTRECORD,"");
+
+        currentStatus.loadFromString(current);
+        lastRecordStatus.loadFromString(last);
 
         setText();
     }
@@ -48,19 +60,23 @@ public class MainActivity extends AppCompatActivity {
         SharedPreferences sp = getPreferences(MODE_PRIVATE);
         SharedPreferences.Editor editor = sp.edit();
         int[][] temp = mGamePanelView.getCurrentItems();
-        String items = ArrayHelper.ArrayToString(temp);
+        currentStatus.setItems(temp);
 
-        editor.putString(Constants.GAMEITEMS,items);
-        editor.putInt(Constants.GAMESCORE,currentScore);
-        editor.putInt(Constants.GAMELEVEL,currentLevel);
+        editor.putString(Constants.LASTRECORD,lastRecordStatus.toString());
+        editor.putString(Constants.CURRENTSTATUS,currentStatus.toString());
+
         editor.commit();
     }
 
     private void init(){
+        lastRecordStatus = new GameStatus();
+        currentStatus = new GameStatus();
+
+        mPlayer = new RingPlayer(R.raw.trigger,this);
 
         mGamePanel = (LinearLayout)findViewById(R.id.game_panel);
         mGameScore = (TextView)findViewById(R.id.game_score);
-        mGameLevel = (TextView)findViewById(R.id.game_level);
+        mGameLevel = (GameItemView)findViewById(R.id.game_level);
 
         mGamePanelView = new GamePanelView(this);
 
@@ -69,7 +85,8 @@ public class MainActivity extends AppCompatActivity {
         mGamePanelView.setCallback(new GamePanelView.Callback() {
             @Override
             public void updateScore(int score) {
-                currentScore = score;
+                currentStatus.setScore(score);
+                currentStatus.setItems(mGamePanelView.getCurrentItems());
                 setText();
             }
 
@@ -80,32 +97,48 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void updateLevel(int level) {
-                currentLevel = level;
-                levelItems = mGamePanelView.getCurrentItems();
+                currentStatus.setLevel(level);
                 setText();
+            }
+
+            @Override
+            public void playTrigger() {
+                mPlayer.play();
+            }
+
+            @Override
+            public void playScore() {
+
             }
         });
     }
 
     private void restart(){
-        currentScore = 0;
-        currentLevel = 0;
+        currentStatus.reset();
+        lastRecordStatus.reset();
         setText();
-        mGamePanelView.restart(null);
+        mGamePanelView.restart(currentStatus);
     }
 
     private void retry(){
-        currentScore = currentLevel;
+        currentStatus = lastRecordStatus.copy();
         setText();
-        mGamePanelView.restart(levelItems);
+        mGamePanelView.restart(currentStatus);
     }
 
     /**
      * 更新界面数值
      */
     private void setText(){
-        mGameLevel.setText(currentLevel +"");
-        mGameScore.setText("分数："+currentScore);
+        mGameLevel.setValue(currentStatus.getLevel());
+        mGameScore.setText("分数："+currentStatus.getScore());
+    }
+
+    /**
+     * 保存当前状态为最新状态，后面retry会回到这个状态
+     */
+    private void saveStatus(){
+        lastRecordStatus = currentStatus.copy();
     }
 
     public void click(View v){
@@ -120,8 +153,21 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.action_clear_cache:
+                saveStatus();
+                Toast.makeText(this, "以保存当前状态", Toast.LENGTH_SHORT).show();
+                break;
+        }
+        return true;
+    }
+
+    @Override
     protected void onStop() {
         super.onStop();
+        mPlayer.destroy();
+        mPlayer = null;
         saveData();
     }
 }

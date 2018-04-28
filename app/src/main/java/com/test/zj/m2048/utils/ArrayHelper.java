@@ -1,7 +1,7 @@
 package com.test.zj.m2048.utils;
 
 /**
- * Created by admin on 2018/4/18.
+ * 使用，和；将二维数组和字符串进行转换
  */
 
 public class ArrayHelper {

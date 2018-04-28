@@ -13,8 +13,9 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.TranslateAnimation;
-import android.widget.FrameLayout;
 import android.widget.LinearLayout;
+
+import com.test.zj.m2048.data.GameStatus;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -73,7 +74,6 @@ public class GamePanelView extends GridLayout {
                 canvas.drawRect(x,y,x+itemSize,y+itemSize,paint);
             }
         }
-
         super.onDraw(canvas);
     }
 
@@ -120,8 +120,10 @@ public class GamePanelView extends GridLayout {
      * 重新开始游戏，传入二维数组，用于恢复到某一次的成绩
      * @param items null时置零，
      */
-    public void restart(int[][] items){
+    public void restart(GameStatus status){
 
+        int[][] items = status.getItems();
+        mLevel = status.getLevel();
         if(items == null){
             for(int i=0;i<itemCount;i++){
                 for(int j=0;j<itemCount;j++){
@@ -348,6 +350,8 @@ public class GamePanelView extends GridLayout {
                     this.callback.updateLevel(mLevel);
                 }
 
+                this.callback.playTrigger();
+
             }
         }
     }
@@ -569,6 +573,10 @@ public class GamePanelView extends GridLayout {
         void gameFinished();
 
         void updateLevel(int level);
+
+        void playTrigger();
+
+        void playScore();
 
     }
 }

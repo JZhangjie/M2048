@@ -4,7 +4,7 @@ import android.util.DisplayMetrics;
 import android.view.WindowManager;
 
 /**
- * Created by admin on 2018/4/3.
+ * 获取设备的屏幕宽度
  */
 
 public class DeviceHelper {
